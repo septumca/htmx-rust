@@ -2,8 +2,6 @@
 
 <ul class="max-w-md space-y-1 text-gray-500 list-none list-inside dark:text-gray-400" id="story-list">
     {% for story in story_list %}
-        {% block storylistelement %}
-            <li class="fade-in">{{ story.title }} - {{ story.creator }}</li>
-        {% endblock %}
+        {% include "story-list-element.html" %}
     {% endfor %}
 </ul>

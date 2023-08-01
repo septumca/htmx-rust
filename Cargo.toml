@@ -16,3 +16,6 @@ minijinja = { version = "1.0.5", features = [ "loader" ] }
 askama = "0.11"
 anyhow = "1.0"
 dotenv_rs = "0.16.1"
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3

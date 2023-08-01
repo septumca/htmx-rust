@@ -1,6 +1,6 @@
 use axum::{
     self,
-    routing::{get, post},
+    routing::get,
     http::StatusCode,
     response::{Response, IntoResponse, Html},
     Form, Router, extract::State,
@@ -38,6 +38,12 @@ struct Story {
     creator: String
 }
 
+#[derive(Deserialize)]
+struct User {
+    id: i64,
+    login: String
+}
+
 struct AppState {
     pool: SqlitePool
 }
@@ -54,7 +60,7 @@ async fn main() -> Result<(), anyhow::Error>{
 
     let app = Router::new()
         .route("/", get(root))
-        .route("/story", get(story_list))
+        .route("/story", get(story_list).post(add_story))
         .with_state(shared_state)
         ;
 
@@ -98,29 +104,86 @@ async fn shutdown_signal() {
 
 #[derive(Template)]
 #[template(path = "index.html")]
-struct RootTemplate {}
+struct RootTemplate {
+    user_list: Vec<User>,
+}
 
 async fn root<'a>(
+    State(state): State<Arc<AppState>>
 ) -> Result<Html<String>, AppError> {
-    let template = RootTemplate { };
+    let user_list = sqlx::query_as!(User, r#"
+        SELECT id, login
+        FROM user
+    "#)
+    .fetch_all(&state.pool)
+    .await?;
+    let template = RootTemplate { user_list };
     Ok(Html(template.render()?))
 }
 
 #[derive(Template)]
 #[template(path = "story-list.html")]
 struct StoryListTemplate {
-    story_list: Vec<Story>
+    story_list: Vec<Story>,
 }
 
-async fn story_list<'a>(
+async fn story_list(
+    State(state): State<Arc<AppState>>
 ) -> Result<Html<String>, AppError> {
-    let template = StoryListTemplate {
-        story_list: vec![
-            Story {
-                title: "Test".into(),
-                creator: "Jason".into()
-            }
-        ]
+    let story_list = sqlx::query_as!(Story, r#"
+        SELECT story.title, user.login as creator
+        FROM story
+        JOIN user on user.id = story.creator
+    "#)
+    .fetch_all(&state.pool)
+    .await?;
+
+    let template = StoryListTemplate { story_list };
+    Ok(Html(template.render()?))
+}
+
+#[derive(Template)]
+#[template(path = "story-list-element-new.html")]
+struct NewStoryElementTemplate {
+    story: Story,
+}
+
+#[derive(Deserialize, Debug)]
+struct NewStoryInput {
+    creator: i64,
+    title: String,
+}
+
+async fn add_story(
+    State(state): State<Arc<AppState>>,
+    Form(input): Form<NewStoryInput>
+) -> Result<Html<String>, AppError> {
+    let mut conn = state.pool.acquire().await?;
+
+    let creator = sqlx::query!(r#"
+        SELECT login FROM user WHERE id = ?1
+        "#,
+        input.creator,
+    )
+    .fetch_one(&mut *conn)
+    .await?;
+
+    let _ = sqlx::query!(r#"
+        INSERT INTO Story (title, creator)
+        VALUES(?1, ?2)
+        "#,
+        input.title,
+        input.creator,
+    )
+    .execute(&mut *conn)
+    .await?
+    .last_insert_rowid();
+
+    let template = NewStoryElementTemplate {
+        story: Story {
+            title: input.title,
+            creator: creator.login
+        }
     };
     Ok(Html(template.render()?))
 }

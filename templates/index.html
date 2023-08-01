@@ -22,14 +22,21 @@
         <div class="col-span-2">
             <h1 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Add Story</h1>
 
-            <form hx-post="/add-story/" hx-target="#story-list" hx-swap="beforeend" hx-indicator="#spinner">
+            <form hx-post="/story" hx-target="#story-list" hx-swap="afterbegin" hx-indicator="#spinner">
                 <div class="mb-2">
                     <label for="story-title">Title</label>
                     <input required type="text" name="title" id="story-title" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
                 </div>
                 <div class="mb-3">
-                    <label for="story-creator">Creator</label>
-                    <input required type="text" name="creator" id="story-creator" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white" for="story-creator">Creator</label>
+
+                    <select required id="story-creator" name="creator" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                        <option selected>Choose a user</option>
+                        {% for user in user_list %}
+                            <option value="{{ user.id }}">{{ user.login }}</option>
+                        {% endfor %}
+                      </select>
+                    <!-- <input required type="text" name="creator" id="story-creator" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" /> -->
                 </div>
 
                 <button type="submit" class="rounded-lg text-white bg-blue-700 hover:bg-blue-800 4focus:ring-4 focus:ring-blue-300 px-2.5 py-2 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 inline-flex items-center">
