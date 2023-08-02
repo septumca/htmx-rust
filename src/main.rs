@@ -61,7 +61,8 @@ async fn main() -> Result<(), anyhow::Error>{
 
     let app = Router::new()
         .route("/", get(root))
-        .route("/story", get(story_list).post(add_story))
+        .route("/story/create", get(story_create))
+        .route("/story", get(story_list).post(create_story))
         .route("/story/:id", delete(delete_story))
         .with_state(shared_state)
         ;
@@ -106,20 +107,10 @@ async fn shutdown_signal() {
 
 #[derive(Template)]
 #[template(path = "index.html")]
-struct RootTemplate {
-    user_list: Vec<User>,
-}
+struct RootTemplate {}
 
-async fn root<'a>(
-    State(state): State<Arc<AppState>>
-) -> Result<Html<String>, AppError> {
-    let user_list = sqlx::query_as!(User, r#"
-        SELECT id, login
-        FROM user
-    "#)
-    .fetch_all(&state.pool)
-    .await?;
-    let template = RootTemplate { user_list };
+async fn root<'a>() -> Result<Html<String>, AppError> {
+    let template = RootTemplate { };
     Ok(Html(template.render()?))
 }
 
@@ -145,8 +136,28 @@ async fn story_list(
 }
 
 #[derive(Template)]
-#[template(path = "story-list-element-new.html")]
-struct NewStoryElementTemplate {
+#[template(path = "story-create.html")]
+struct StoryCreateTemplate {
+    user_list: Vec<User>,
+}
+
+async fn story_create(
+    State(state): State<Arc<AppState>>
+) -> Result<Html<String>, AppError> {
+    let user_list = sqlx::query_as!(User, r#"
+        SELECT id, login
+        FROM user
+    "#)
+    .fetch_all(&state.pool)
+    .await?;
+
+    let template = StoryCreateTemplate { user_list };
+    Ok(Html(template.render()?))
+}
+
+#[derive(Template)]
+#[template(path = "story-list-element.html")]
+struct StoryElementTemplate {
     story: Story,
 }
 
@@ -156,7 +167,7 @@ struct NewStoryInput {
     title: String,
 }
 
-async fn add_story(
+async fn create_story(
     State(state): State<Arc<AppState>>,
     Form(input): Form<NewStoryInput>
 ) -> Result<Html<String>, AppError> {
@@ -181,7 +192,7 @@ async fn add_story(
     .await?
     .last_insert_rowid();
 
-    let template = NewStoryElementTemplate {
+    let template = StoryElementTemplate {
         story: Story {
             id,
             title: input.title,

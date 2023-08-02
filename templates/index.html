@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTMX Demo</title>
     <script src="https://unpkg.com/htmx.org@1.9.2" integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/hyperscript.org@0.9.7"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .fade-in.htmx-added {
@@ -19,42 +20,100 @@
             opacity: 0;
             transition: opacity 0.5s ease-out;
         }
+
+        /***** MODAL DIALOG ****/
+        #modal {
+            /* Underlay covers entire screen. */
+            position: fixed;
+            top:0px;
+            bottom: 0px;
+            left:0px;
+            right:0px;
+            background-color:rgba(0,0,0,0.5);
+            z-index:1000;
+
+            /* Flexbox centers the .modal-content vertically and horizontally */
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+
+            /* Animate when opening */
+            animation-name: fadeIn;
+            animation-duration:150ms;
+            animation-timing-function: ease;
+        }
+
+        #modal > .modal-underlay {
+            /* underlay takes up the entire viewport. This is only
+            required if you want to click to dismiss the popup */
+            position: absolute;
+            z-index: -1;
+            top:0px;
+            bottom:0px;
+            left: 0px;
+            right: 0px;
+        }
+
+        #modal > .modal-content {
+            /* Position visible dialog near the top of the window */
+            margin-top:10vh;
+
+            /* Sizing for visible dialog */
+            width:80%;
+            max-width:600px;
+
+            /* Display properties for visible dialog*/
+            border:solid 1px #999;
+            border-radius:8px;
+            box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.3);
+            background-color:white;
+            padding:20px;
+
+            /* Animate when opening */
+            animation-name:zoomIn;
+            animation-duration:150ms;
+            animation-timing-function: ease;
+        }
+
+        #modal.closing {
+            /* Animate when closing */
+            animation-name: fadeOut;
+            animation-duration:150ms;
+            animation-timing-function: ease;
+        }
+
+        #modal.closing > .modal-content {
+            /* Animate when closing */
+            animation-name: zoomOut;
+            animation-duration:150ms;
+            animation-timing-function: ease;
+        }
+
+        @keyframes fadeIn {
+            0% {opacity: 0;}
+            100% {opacity: 1;}
+        }
+
+        @keyframes fadeOut {
+            0% {opacity: 1;}
+            100% {opacity: 0;}
+        }
+
+        @keyframes zoomIn {
+            0% {transform: scale(0.9);}
+            100% {transform: scale(1);}
+        }
+
+        @keyframes zoomOut {
+            0% {transform: scale(1);}
+            100% {transform: scale(0.9);}
+        }
     </style>
 </head>
 <body class="p-2">
-    <div class="grid gap-4 grid-cols-6">
-        <div class="col-span-2">
-            <h1 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Add Story</h1>
-
-            <form hx-post="/story" hx-target="#story-list" hx-swap="afterbegin" hx-indicator="#spinner">
-                <div class="mb-2">
-                    <label for="story-title">Title</label>
-                    <input required type="text" name="title" id="story-title" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
-                </div>
-                <div class="mb-3">
-                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white" for="story-creator">Creator</label>
-
-                    <select required id="story-creator" name="creator" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                        <option selected>Choose a user</option>
-                        {% for user in user_list %}
-                            <option value="{{ user.id }}">{{ user.login }}</option>
-                        {% endfor %}
-                      </select>
-                    <!-- <input required type="text" name="creator" id="story-creator" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" /> -->
-                </div>
-
-                <button type="submit" class="rounded-lg text-white bg-blue-700 hover:bg-blue-800 4focus:ring-4 focus:ring-blue-300 px-2.5 py-2 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 inline-flex items-center">
-                    Submit
-                    <svg id="spinner" aria-hidden="true" class="htmx-indicator w-6 h-6 ml-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-                        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
-                    </svg>
-                </button>
-            </form>
-        </div>
-
-        <div hx-get="/story" hx-trigger="load"></div>
-    </div>
-
+    <button hx-get="/story/create" hx-target="body" hx-swap="beforeend" class="rounded-lg text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 px-2.5 py-2 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 inline-flex items-center">
+        Create
+    </button>
+    <div hx-get="/story" hx-trigger="load"></div>
 </body>
 </html>

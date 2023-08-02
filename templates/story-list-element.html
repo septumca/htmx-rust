@@ -1,4 +1,8 @@
-<li id="story-list-element-{{ story.id }}" class="fade-out">
+<li id="story-list-element-{{ story.id }}" class="fade-out fade-in">
     {{ story.title }} - {{ story.creator }}
-    {% include "story-list-element-delete.html" %}
+    <button hx-delete="/story/{{ story.id }}" hx-target="#story-list-element-{{ story.id }}" hx-swap="outerHTML swap:0.5s" class="rounded-lg text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 px-2.5 py-2 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800 inline-flex items-center">
+        Delete
+        {% let spinner_color = "fill-red-600" %}
+        {% include "spinner.html" %}
+    </button>
 </li>
