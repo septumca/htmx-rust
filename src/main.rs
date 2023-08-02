@@ -1,9 +1,9 @@
 use axum::{
     self,
-    routing::get,
+    routing::{get, delete},
     http::StatusCode,
     response::{Response, IntoResponse, Html},
-    Form, Router, extract::State,
+    Form, Router, extract::{State, Path},
 };
 use serde::Deserialize;
 use std::{net::SocketAddr, sync::Arc};
@@ -34,6 +34,7 @@ where
 
 #[derive(Deserialize)]
 struct Story {
+    id: i64,
     title: String,
     creator: String
 }
@@ -61,6 +62,7 @@ async fn main() -> Result<(), anyhow::Error>{
     let app = Router::new()
         .route("/", get(root))
         .route("/story", get(story_list).post(add_story))
+        .route("/story/:id", delete(delete_story))
         .with_state(shared_state)
         ;
 
@@ -131,7 +133,7 @@ async fn story_list(
     State(state): State<Arc<AppState>>
 ) -> Result<Html<String>, AppError> {
     let story_list = sqlx::query_as!(Story, r#"
-        SELECT story.title, user.login as creator
+        SELECT story.id, story.title, user.login as creator
         FROM story
         JOIN user on user.id = story.creator
     "#)
@@ -168,7 +170,7 @@ async fn add_story(
     .fetch_one(&mut *conn)
     .await?;
 
-    let _ = sqlx::query!(r#"
+    let id = sqlx::query!(r#"
         INSERT INTO Story (title, creator)
         VALUES(?1, ?2)
         "#,
@@ -181,9 +183,27 @@ async fn add_story(
 
     let template = NewStoryElementTemplate {
         story: Story {
+            id,
             title: input.title,
             creator: creator.login
         }
     };
     Ok(Html(template.render()?))
+}
+
+async fn delete_story(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>
+) -> Result<(), AppError> {
+    let mut conn = state.pool.acquire().await?;
+
+    sqlx::query!(r#"
+        DELETE FROM Story WHERE id = ?1
+        "#,
+        id,
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(())
 }

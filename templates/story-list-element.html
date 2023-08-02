@@ -1,1 +1,4 @@
-<li class="fade-in">{{ story.title }} - {{ story.creator }}</li>
+<li id="story-list-element-{{ story.id }}" class="fade-out">
+    {{ story.title }} - {{ story.creator }}
+    {% include "story-list-element-delete.html" %}
+</li>
