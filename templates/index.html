@@ -1,119 +1,113 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTMX Demo</title>
-    <script src="https://unpkg.com/htmx.org@1.9.2" integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/hyperscript.org@0.9.7"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .fade-in.htmx-added {
-            opacity: 0;
-        }
-        .fade-in {
-            opacity: 1;
-            transition: opacity 0.5s ease-out;
-        }
-        .fade-out.htmx-swapping {
-            opacity: 0;
-            transition: opacity 0.5s ease-out;
-        }
+{% extends "base.html" %}
 
-        /***** MODAL DIALOG ****/
-        #modal {
-            /* Underlay covers entire screen. */
-            position: fixed;
-            top:0px;
-            bottom: 0px;
-            left:0px;
-            right:0px;
-            background-color:rgba(0,0,0,0.5);
-            z-index:1000;
+{% block head %}
+<script src="https://unpkg.com/hyperscript.org@0.9.7"></script>
+<style>
+    .fade-in.htmx-added {
+        opacity: 0;
+    }
+    .fade-in {
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+    }
+    .fade-out.htmx-swapping {
+        opacity: 0;
+        transition: opacity 0.5s ease-out;
+    }
 
-            /* Flexbox centers the .modal-content vertically and horizontally */
-            display:flex;
-            flex-direction:column;
-            align-items:center;
+    /***** MODAL DIALOG ****/
+    #modal {
+        /* Underlay covers entire screen. */
+        position: fixed;
+        top:0px;
+        bottom: 0px;
+        left:0px;
+        right:0px;
+        background-color:rgba(0,0,0,0.5);
+        z-index:1000;
 
-            /* Animate when opening */
-            animation-name: fadeIn;
-            animation-duration:150ms;
-            animation-timing-function: ease;
-        }
+        /* Flexbox centers the .modal-content vertically and horizontally */
+        display:flex;
+        flex-direction:column;
+        align-items:center;
 
-        #modal > .modal-underlay {
-            /* underlay takes up the entire viewport. This is only
-            required if you want to click to dismiss the popup */
-            position: absolute;
-            z-index: -1;
-            top:0px;
-            bottom:0px;
-            left: 0px;
-            right: 0px;
-        }
+        /* Animate when opening */
+        animation-name: fadeIn;
+        animation-duration:150ms;
+        animation-timing-function: ease;
+    }
 
-        #modal > .modal-content {
-            /* Position visible dialog near the top of the window */
-            margin-top:10vh;
+    #modal > .modal-underlay {
+        /* underlay takes up the entire viewport. This is only
+        required if you want to click to dismiss the popup */
+        position: absolute;
+        z-index: -1;
+        top:0px;
+        bottom:0px;
+        left: 0px;
+        right: 0px;
+    }
 
-            /* Sizing for visible dialog */
-            width:80%;
-            max-width:600px;
+    #modal > .modal-content {
+        /* Position visible dialog near the top of the window */
+        margin-top:10vh;
 
-            /* Display properties for visible dialog*/
-            border:solid 1px #999;
-            border-radius:8px;
-            box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.3);
-            background-color:white;
-            padding:20px;
+        /* Sizing for visible dialog */
+        width:80%;
+        max-width:600px;
 
-            /* Animate when opening */
-            animation-name:zoomIn;
-            animation-duration:150ms;
-            animation-timing-function: ease;
-        }
+        /* Display properties for visible dialog*/
+        border:solid 1px #999;
+        border-radius:8px;
+        box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.3);
+        background-color:white;
+        padding:20px;
 
-        #modal.closing {
-            /* Animate when closing */
-            animation-name: fadeOut;
-            animation-duration:150ms;
-            animation-timing-function: ease;
-        }
+        /* Animate when opening */
+        animation-name:zoomIn;
+        animation-duration:150ms;
+        animation-timing-function: ease;
+    }
 
-        #modal.closing > .modal-content {
-            /* Animate when closing */
-            animation-name: zoomOut;
-            animation-duration:150ms;
-            animation-timing-function: ease;
-        }
+    #modal.closing {
+        /* Animate when closing */
+        animation-name: fadeOut;
+        animation-duration:150ms;
+        animation-timing-function: ease;
+    }
 
-        @keyframes fadeIn {
-            0% {opacity: 0;}
-            100% {opacity: 1;}
-        }
+    #modal.closing > .modal-content {
+        /* Animate when closing */
+        animation-name: zoomOut;
+        animation-duration:150ms;
+        animation-timing-function: ease;
+    }
 
-        @keyframes fadeOut {
-            0% {opacity: 1;}
-            100% {opacity: 0;}
-        }
+    @keyframes fadeIn {
+        0% {opacity: 0;}
+        100% {opacity: 1;}
+    }
 
-        @keyframes zoomIn {
-            0% {transform: scale(0.9);}
-            100% {transform: scale(1);}
-        }
+    @keyframes fadeOut {
+        0% {opacity: 1;}
+        100% {opacity: 0;}
+    }
 
-        @keyframes zoomOut {
-            0% {transform: scale(1);}
-            100% {transform: scale(0.9);}
-        }
-    </style>
-</head>
-<body class="p-2">
+    @keyframes zoomIn {
+        0% {transform: scale(0.9);}
+        100% {transform: scale(1);}
+    }
+
+    @keyframes zoomOut {
+        0% {transform: scale(1);}
+        100% {transform: scale(0.9);}
+    }
+</style>
+{% endblock %}
+
+{% block body %}
     <button hx-get="/story/create" hx-target="body" hx-swap="beforeend" class="rounded-lg text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 px-2.5 py-2 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 inline-flex items-center">
         Create
     </button>
     <div hx-get="/story" hx-trigger="load"></div>
-</body>
-</html>
+{% endblock %}

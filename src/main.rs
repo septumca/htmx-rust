@@ -1,11 +1,13 @@
+use anyhow::anyhow;
 use axum::{
     self,
     routing::{get, delete},
-    http::StatusCode,
     response::{Response, IntoResponse, Html},
+    http::StatusCode,
     Form, Router, extract::{State, Path},
 };
 use serde::Deserialize;
+use sha256::digest;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
 use askama::Template;
@@ -42,7 +44,7 @@ struct Story {
 #[derive(Deserialize)]
 struct User {
     id: i64,
-    login: String
+    username: String
 }
 
 struct AppState {
@@ -61,6 +63,7 @@ async fn main() -> Result<(), anyhow::Error>{
 
     let app = Router::new()
         .route("/", get(root))
+        .route("/login", get(login).post(do_login))
         .route("/story/create", get(story_create))
         .route("/story", get(story_list).post(create_story))
         .route("/story/:id", delete(delete_story))
@@ -109,9 +112,47 @@ async fn shutdown_signal() {
 #[template(path = "index.html")]
 struct RootTemplate {}
 
-async fn root<'a>() -> Result<Html<String>, AppError> {
+async fn root() -> Result<Html<String>, AppError> {
     let template = RootTemplate { };
     Ok(Html(template.render()?))
+}
+
+#[derive(Template)]
+#[template(path = "login.html")]
+struct LoginTemplate {}
+
+async fn login() -> Result<Html<String>, AppError> {
+    let template = LoginTemplate { };
+    Ok(Html(template.render()?))
+}
+
+#[derive(Deserialize, Debug)]
+struct LoginInput {
+    username: String,
+    password: String,
+}
+
+async fn do_login(
+    State(state): State<Arc<AppState>>,
+    Form(input): Form<LoginInput>
+) -> Result<Response, AppError> {
+    let mut conn = state.pool.acquire().await?;
+    let user = sqlx::query!(r#"
+            SELECT user.password, user.salt
+            FROM user
+            WHERE user.username = ?1
+        "#,
+        input.username)
+        .fetch_one(&mut *conn)
+        .await?;
+    let db_password = digest(user.password + &user.salt);
+    let input_password = digest(input.password + &user.salt);
+
+    if db_password != input_password {
+        return Err(AppError(anyhow!("Login failed!")));
+    }
+
+    Ok(([("HX-Redirect", "/"), ("Set-Cookie", "session-id:12345")]).into_response())
 }
 
 #[derive(Template)]
@@ -124,7 +165,7 @@ async fn story_list(
     State(state): State<Arc<AppState>>
 ) -> Result<Html<String>, AppError> {
     let story_list = sqlx::query_as!(Story, r#"
-        SELECT story.id, story.title, user.login as creator
+        SELECT story.id, story.title, user.username as creator
         FROM story
         JOIN user on user.id = story.creator
     "#)
@@ -145,7 +186,7 @@ async fn story_create(
     State(state): State<Arc<AppState>>
 ) -> Result<Html<String>, AppError> {
     let user_list = sqlx::query_as!(User, r#"
-        SELECT id, login
+        SELECT id, username
         FROM user
     "#)
     .fetch_all(&state.pool)
@@ -174,7 +215,7 @@ async fn create_story(
     let mut conn = state.pool.acquire().await?;
 
     let creator = sqlx::query!(r#"
-        SELECT login FROM user WHERE id = ?1
+        SELECT username FROM user WHERE id = ?1
         "#,
         input.creator,
     )
@@ -196,7 +237,7 @@ async fn create_story(
         story: Story {
             id,
             title: input.title,
-            creator: creator.login
+            creator: creator.username
         }
     };
     Ok(Html(template.render()?))
